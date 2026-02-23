@@ -263,7 +263,13 @@ module Sucheme
                 return eval_define_syntax(expr.cdr, env)
 
               when 'let-syntax', 'letrec-syntax'
-                return eval_let_syntax(expr.cdr, env)
+                result = eval_let_syntax(expr.cdr, env)
+                if result.is_a?(SchemeTailCall)
+                  expr = result.expr
+                  env = result.env
+                  next
+                end
+                return result
 
               when 'syntax-rules'
                 return eval_syntax_rules(expr.cdr, env)
@@ -314,10 +320,22 @@ module Sucheme
                 return eval_guard(expr.cdr, env)
 
               when 'let-values'
-                return eval_let_values(expr.cdr, env)
+                result = eval_let_values(expr.cdr, env)
+                if result.is_a?(SchemeTailCall)
+                  expr = result.expr
+                  env = result.env
+                  next
+                end
+                return result
 
               when 'let*-values'
-                return eval_let_star_values(expr.cdr, env)
+                result = eval_let_star_values(expr.cdr, env)
+                if result.is_a?(SchemeTailCall)
+                  expr = result.expr
+                  env = result.env
+                  next
+                end
+                return result
 
               when 'define-syntax'
                 return eval_define_syntax(expr.cdr, env)
@@ -1256,13 +1274,6 @@ module Sucheme
         end
 
         eval_body(body, new_env)
-        result = VOID
-        c = body
-        while c.is_a?(SchemePair)
-          result = eval_expr(c.car, new_env)
-          c = c.cdr
-        end
-        result
       end
 
       def eval_let_star_values(rest, env)
@@ -1290,13 +1301,7 @@ module Sucheme
           current = current.cdr
         end
 
-        result = VOID
-        c = body
-        while c.is_a?(SchemePair)
-          result = eval_expr(c.car, new_env)
-          c = c.cdr
-        end
-        result
+        eval_body(body, new_env)
       end
 
       def scheme_write(obj)

@@ -315,6 +315,16 @@ RSpec.describe Sucheme::Evaluator do
       result = eval_str(code)
       expect(result.to_a).to eq([2, 1])
     end
+
+    it 'let-syntax body executes exactly once (no double evaluation)' do
+      env2 = described_class.make_global_env
+      eval_str('(define counter 0)', env2)
+      eval_str('(let-syntax ((double (syntax-rules ()
+                                       ((double x) (* x 2)))))
+                  (set! counter (+ counter 1))
+                  (double 5))', env2)
+      expect(eval_str('counter', env2)).to eq(1)
+    end
   end
 
   describe 'define-record-type' do
@@ -338,6 +348,25 @@ RSpec.describe Sucheme::Evaluator do
 
     it 'call-with-values' do
       result = eval_str('(call-with-values (lambda () (values 1 2)) +)')
+      expect(result).to eq(3)
+    end
+
+    it 'let-values basic' do
+      result = eval_str('(let-values (((a b) (values 1 2))) (+ a b))')
+      expect(result).to eq(3)
+    end
+
+    it 'let-values body executes exactly once (no double evaluation)' do
+      env2 = described_class.make_global_env
+      eval_str('(define counter 0)', env2)
+      eval_str('(let-values (((a) (values 10)))
+                  (set! counter (+ counter 1))
+                  a)', env2)
+      expect(eval_str('counter', env2)).to eq(1)
+    end
+
+    it 'let*-values basic' do
+      result = eval_str('(let*-values (((a b) (values 1 2)) ((c) (+ a b))) c)')
       expect(result).to eq(3)
     end
   end

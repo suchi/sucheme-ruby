@@ -125,6 +125,18 @@ RSpec.describe Sucheme::Parser do
       expect(result[0]).to eq(1)
       expect(result[1]).to eq(3)
     end
+
+    it 'datum comment at end of file does not push nil' do
+      result = parse('1 2 #; 3')
+      expect(result.length).to eq(2)
+      expect(result).not_to include(nil)
+    end
+
+    it 'only datum comment returns empty' do
+      result = parse('#; 42')
+      expect(result).to be_empty
+      expect(result).not_to include(nil)
+    end
   end
 
   describe 'multiple expressions' do

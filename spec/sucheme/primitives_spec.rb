@@ -338,6 +338,12 @@ RSpec.describe 'Primitives' do
     it 'string->number' do
       expect(eval_str('(string->number "42")')).to eq(42)
       expect(eval_str('(string->number "abc")')).to eq(false)
+      # radix support
+      expect(eval_str('(string->number "ff" 16)')).to eq(255)
+      expect(eval_str('(string->number "FF" 16)')).to eq(255)
+      expect(eval_str('(string->number "11111111" 2)')).to eq(255)
+      expect(eval_str('(string->number "377" 8)')).to eq(255)
+      expect(eval_str('(string->number "zz" 16)')).to eq(false)
     end
 
     it 'make-string' do
@@ -435,6 +441,33 @@ RSpec.describe 'Primitives' do
     it 'not' do
       expect(eval_str('(not #f)')).to eq(true)
       expect(eval_str('(not 42)')).to eq(false)
+    end
+
+    it 'fold-left argument order is (acc, item)' do
+      # (fold-left f init '(1 2 3)) = (f (f (f init 1) 2) 3)
+      result = eval_str("(fold-left (lambda (acc x) (cons x acc)) '() '(1 2 3))")
+      expect(result.to_a).to eq([3, 2, 1])
+    end
+
+    it 'foldl argument order is (acc, item) same as fold-left' do
+      result = eval_str("(foldl (lambda (acc x) (cons x acc)) '() '(1 2 3))")
+      expect(result.to_a).to eq([3, 2, 1])
+    end
+
+    it 'fold-right argument order is (item, acc)' do
+      # (fold-right f init '(1 2 3)) = (f 1 (f 2 (f 3 init)))
+      result = eval_str("(fold-right cons '() '(1 2 3))")
+      expect(result.to_a).to eq([1, 2, 3])
+    end
+
+    it 'foldr argument order is (item, acc) same as fold-right' do
+      result = eval_str("(foldr cons '() '(1 2 3))")
+      expect(result.to_a).to eq([1, 2, 3])
+    end
+
+    it 'fold-left and foldl compute same sum' do
+      expect(eval_str("(fold-left + 0 '(1 2 3 4 5))")).to eq(15)
+      expect(eval_str("(foldl + 0 '(1 2 3 4 5))")).to eq(15)
     end
   end
 
