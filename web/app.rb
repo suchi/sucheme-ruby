@@ -29,7 +29,7 @@ post '/eval' do
     old_stdout = $stdout
     $stdout = output_buffer
 
-    result = Timeout.timeout(10) do
+    result = Timeout.timeout(5) do
       Sucheme::Evaluator.eval_source(code, env)
     end
 
@@ -41,7 +41,7 @@ post '/eval' do
     json({ success: true, output: output, result: result_str })
   rescue Timeout::Error
     $stdout = old_stdout rescue nil
-    json({ success: false, error: 'Timeout: execution exceeded 10 seconds' })
+    json({ success: false, error: 'Timeout: execution exceeded 5 seconds' })
   rescue Sucheme::SuchemeError => e
     $stdout = old_stdout rescue nil
     json({ success: false, error: e.message })
