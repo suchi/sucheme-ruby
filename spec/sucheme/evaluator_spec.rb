@@ -457,5 +457,15 @@ RSpec.describe Sucheme::Evaluator do
       expect { described_class.eval_source('(call-with-output-file "f" (lambda (p) #f))', sandbox) }
         .to raise_error(Sucheme::EvalError, /call-with-output-file.*not available in sandbox/)
     end
+
+    it 'blocks with-input-from-file in sandbox' do
+      expect { described_class.eval_source('(with-input-from-file "f" (lambda () #f))', sandbox) }
+        .to raise_error(Sucheme::EvalError, /with-input-from-file.*not available in sandbox/)
+    end
+
+    it 'blocks with-output-to-file in sandbox' do
+      expect { described_class.eval_source('(with-output-to-file "f" (lambda () #f))', sandbox) }
+        .to raise_error(Sucheme::EvalError, /with-output-to-file.*not available in sandbox/)
+    end
   end
 end

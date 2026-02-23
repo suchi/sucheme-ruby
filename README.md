@@ -49,6 +49,25 @@ bundle exec ruby bin/sucheme -e '(+ 1 2 3)'
 bundle exec ruby web/app.rb
 ```
 
+### Windows (PowerShell)
+
+```powershell
+# REPL起動
+bundle exec ruby bin/sucheme
+
+# ファイル実行
+bundle exec ruby bin/sucheme samples\01_basics\variables.scm
+
+# 式の評価（シングルクォートの代わりにダブルクォートを使用）
+bundle exec ruby bin/sucheme -e "(+ 1 2 3)"
+
+# バッチラッパー経由（bin\sucheme.bat）
+bundle exec ruby bin\sucheme -e "(+ 1 2 3)"
+
+# Web UI
+bundle exec ruby web\app.rb
+```
+
 ## クイックスタート
 
 ```scheme
