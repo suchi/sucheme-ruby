@@ -8,11 +8,19 @@ on:
 
 jobs:
   test:
-    name: Test (Ruby ${{ matrix.ruby-version }})
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }}, Ruby ${{ matrix.ruby-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         ruby-version: ['3.2', '3.3']
+        exclude:
+          # Only test Ruby 3.3 on Linux to save CI time
+          - os: windows-latest
+            ruby-version: '3.3'
+          - os: macos-latest
+            ruby-version: '3.3'
 
     steps:
       - uses: actions/checkout@v4
@@ -30,17 +38,26 @@ jobs:
         run: bundle exec rspec spec/ --format progress
 
       - name: Upload coverage report
-        if: matrix.ruby-version == '3.2'
+        if: matrix.os == 'ubuntu-latest' && matrix.ruby-version == '3.2'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/
           retention-days: 14
 
-      - name: Run basic smoke test
+      - name: Run smoke test (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo '(+ 1 2)' | bundle exec ruby bin/sucheme
           bundle exec ruby bin/sucheme --version
+
+      - name: Run smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          bundle exec ruby bin/sucheme --version
+          bundle exec ruby bin/sucheme -e "(+ 1 2)"
+          bundle exec ruby bin/sucheme -e "(display (+ 1 2 3))"
 
   benchmark:
     name: Benchmark

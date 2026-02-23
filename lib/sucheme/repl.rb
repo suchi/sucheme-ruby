@@ -35,6 +35,9 @@ module Sucheme
           end
         rescue SuchemeError => e
           @output.puts ";; Error: #{e.message}"
+        rescue Interrupt
+          @output.puts
+          @output.puts ";; Interrupted. Type (exit) or Ctrl-D to quit."
         rescue => e
           @output.puts ";; Internal error: #{e.message}"
           @output.puts e.backtrace.first(3).map { |l| ";;   #{l}" }.join("\n") if ENV['SUCHEME_DEBUG']
