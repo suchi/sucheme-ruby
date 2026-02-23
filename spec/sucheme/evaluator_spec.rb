@@ -420,4 +420,42 @@ RSpec.describe Sucheme::Evaluator do
       expect(eval_str('x', env)).to eq(1)
     end
   end
+
+  describe 'make_sandbox_env' do
+    let(:sandbox) { described_class.make_sandbox_env }
+
+    it 'allows normal arithmetic in sandbox' do
+      expect(described_class.eval_source('(+ 1 2)', sandbox)).to eq(3)
+    end
+
+    it 'blocks open-input-file in sandbox' do
+      expect { described_class.eval_source('(open-input-file "test.txt")', sandbox) }
+        .to raise_error(Sucheme::EvalError, /open-input-file.*not available in sandbox/)
+    end
+
+    it 'blocks open-output-file in sandbox' do
+      expect { described_class.eval_source('(open-output-file "test.txt")', sandbox) }
+        .to raise_error(Sucheme::EvalError, /open-output-file.*not available in sandbox/)
+    end
+
+    it 'blocks load in sandbox' do
+      expect { described_class.eval_source('(load "file.scm")', sandbox) }
+        .to raise_error(Sucheme::EvalError, /load.*not available in sandbox/)
+    end
+
+    it 'blocks exit in sandbox' do
+      expect { described_class.eval_source('(exit)', sandbox) }
+        .to raise_error(Sucheme::EvalError, /exit.*not available in sandbox/)
+    end
+
+    it 'blocks call-with-input-file in sandbox' do
+      expect { described_class.eval_source('(call-with-input-file "f" (lambda (p) #f))', sandbox) }
+        .to raise_error(Sucheme::EvalError, /call-with-input-file.*not available in sandbox/)
+    end
+
+    it 'blocks call-with-output-file in sandbox' do
+      expect { described_class.eval_source('(call-with-output-file "f" (lambda (p) #f))', sandbox) }
+        .to raise_error(Sucheme::EvalError, /call-with-output-file.*not available in sandbox/)
+    end
+  end
 end
