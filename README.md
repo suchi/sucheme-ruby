@@ -62,7 +62,7 @@ bundle exec ruby bin/sucheme samples\01_basics\variables.scm
 bundle exec ruby bin/sucheme -e "(+ 1 2 3)"
 
 # バッチラッパー経由（bin\sucheme.bat）
-bundle exec ruby bin\sucheme -e "(+ 1 2 3)"
+.\bin\sucheme.bat -e "(+ 1 2 3)"
 
 # Web UI
 bundle exec ruby web\app.rb
