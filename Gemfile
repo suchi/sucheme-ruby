@@ -13,5 +13,4 @@ group :development, :test do
   gem 'simplecov', '~> 0.22'
   gem 'simplecov-html', '~> 0.13'
   gem 'rubocop', '~> 1.65', require: false
-  gem 'benchmark-ips', '~> 2.13'
 end

@@ -3,10 +3,15 @@
 require 'sinatra'
 require 'sinatra/json'
 require 'json'
+require 'timeout'
+require 'stringio'
+require 'thread'
 require_relative '../lib/sucheme'
 
 set :public_folder, File.join(__dir__, 'public')
 set :port, 4567
+
+STDOUT_MUTEX = Mutex.new
 
 get '/' do
   send_file File.join(settings.public_folder, 'index.html')
@@ -22,31 +27,37 @@ post '/eval' do
          end
   code = data['code'] || ''
 
+  output_buffer = StringIO.new
+  result_str = nil
+  error_msg = nil
+
   begin
-    env = Sucheme::Evaluator.make_global_env
+    env = Sucheme::Evaluator.make_sandbox_env
 
-    output_buffer = StringIO.new
-    old_stdout = $stdout
-    $stdout = output_buffer
-
-    result = Timeout.timeout(5) do
-      Sucheme::Evaluator.eval_source(code, env)
+    STDOUT_MUTEX.synchronize do
+      old_stdout = $stdout
+      $stdout = output_buffer
+      begin
+        result = Timeout.timeout(5) do
+          Sucheme::Evaluator.eval_source(code, env)
+        end
+        result_str = result.is_a?(Sucheme::SchemeVoid) ? nil : result.to_s
+      ensure
+        $stdout = old_stdout
+      end
     end
-
-    $stdout = old_stdout
-
-    output = output_buffer.string
-    result_str = result.is_a?(Sucheme::SchemeVoid) ? nil : result.to_s
-
-    json({ success: true, output: output, result: result_str })
   rescue Timeout::Error
-    $stdout = old_stdout rescue nil
-    json({ success: false, error: 'Timeout: execution exceeded 5 seconds' })
+    error_msg = 'Timeout: execution exceeded 5 seconds'
   rescue Sucheme::SuchemeError => e
-    $stdout = old_stdout rescue nil
-    json({ success: false, error: e.message })
+    error_msg = e.message
   rescue => e
-    $stdout = old_stdout rescue nil
-    json({ success: false, error: "Internal error: #{e.message}" })
+    error_msg = "Internal error: #{e.message}"
+  end
+
+  output = output_buffer.string
+  if error_msg
+    json({ success: false, error: error_msg, output: output })
+  else
+    json({ success: true, output: output, result: result_str })
   end
 end

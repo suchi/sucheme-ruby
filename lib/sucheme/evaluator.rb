@@ -11,6 +11,22 @@ module Sucheme
         @global_env
       end
 
+      # Sandbox environment for web UI: dangerous I/O and process primitives are disabled
+      SANDBOX_BLOCKED = %w[
+        open-input-file open-output-file with-input-from-file with-output-to-file
+        call-with-input-file call-with-output-file load exit
+      ].freeze
+
+      def make_sandbox_env
+        env = make_global_env
+        SANDBOX_BLOCKED.each do |name|
+          env.define(name, SchemePrimitive.new(name) do |*_args|
+            raise EvalError, "#{name}: not available in sandbox"
+          end)
+        end
+        env
+      end
+
       def eval_source(source, env = nil, filename: '<string>')
         env ||= global_env || make_global_env
         exprs = Parser.parse(source, filename: filename)
@@ -809,13 +825,6 @@ module Sucheme
         end
 
         eval_body(body, new_env)
-        result = VOID
-        c = body
-        while c.is_a?(SchemePair)
-          result = eval_expr(c.car, new_env)
-          c = c.cdr
-        end
-        result
       end
 
       def eval_syntax_rules(rest, env)

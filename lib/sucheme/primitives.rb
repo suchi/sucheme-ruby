@@ -215,15 +215,17 @@ module Sucheme
           raise TypeError, "string->number: not a string: #{str}" unless str.is_a?(String)
 
           radix = rest.empty? ? 10 : rest[0].to_i
+          s = str.strip
           begin
-            lexer = Lexer.new(str)
-            tok = lexer.next_token
-            if tok.type == TOKEN_NUMBER
-              tok.value
+            if radix == 10
+              lexer = Lexer.new(s)
+              tok = lexer.next_token
+              tok.type == TOKEN_NUMBER ? tok.value : false
             else
-              false
+              # Parse integer in given radix (2, 8, 16 supported)
+              Integer(s, radix)
             end
-          rescue LexError
+          rescue ArgumentError, LexError
             false
           end
         end
@@ -1288,7 +1290,7 @@ module Sucheme
           result = init
           current = lst
           while current.is_a?(SchemePair)
-            result = Evaluator.apply(proc, [current.car, result])
+            result = Evaluator.apply(proc, [result, current.car])
             current = current.cdr
           end
           result

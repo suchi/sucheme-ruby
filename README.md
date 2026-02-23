@@ -1,6 +1,6 @@
 # Sucheme - RubyによるR5RS Schemeインタープリタ
 
-[![CI](https://github.com/actions/workflows/ci.yml/badge.svg)](https://github.com/actions/workflows/ci.yml)
+[![CI](https://github.com/suchi/sucheme-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/suchi/sucheme-ruby/actions/workflows/ci.yml)
 
 Sucheme（スキーム）は、純粋なRubyで実装されたR5RS準拠のSchemeインタープリタです。
 

@@ -15,7 +15,10 @@ module Sucheme
 
     def parse_all
       exprs = []
-      exprs << parse_expr while !at_eof?
+      while !at_eof?
+        expr = parse_expr
+        exprs << expr unless expr.nil?
+      end
       exprs
     end
 
