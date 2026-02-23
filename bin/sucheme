@@ -1,0 +1,106 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.join(__dir__, '..', 'lib'))
+
+require 'optparse'
+require 'sucheme'
+
+options = {
+  quiet: false,
+  no_init: false,
+  interactive: false,
+  load_files: [],
+  eval_exprs: []
+}
+
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: sucheme [options] [file]"
+
+  opts.on('-v', '--version', 'Show version') do
+    puts "Sucheme #{Sucheme::VERSION}"
+    exit 0
+  end
+
+  opts.on('-h', '--help', 'Show help') do
+    puts opts
+    exit 0
+  end
+
+  opts.on('-l FILE', '--load FILE', 'Load and execute FILE') do |f|
+    options[:load_files] << f
+  end
+
+  opts.on('-e EXPR', '--eval EXPR', 'Evaluate EXPR') do |e|
+    options[:eval_exprs] << e
+  end
+
+  opts.on('-q', '--quiet', 'Suppress banner') do
+    options[:quiet] = true
+  end
+
+  opts.on('--no-init', 'Skip init file') do
+    options[:no_init] = true
+  end
+
+  opts.on('-i', '--interactive', 'Force interactive mode') do
+    options[:interactive] = true
+  end
+end
+
+parser.parse!
+
+env = Sucheme::Evaluator.make_global_env
+
+# Load files specified with -l
+options[:load_files].each do |file|
+  unless File.exist?(file)
+    $stderr.puts "sucheme: cannot open file: #{file}"
+    exit 1
+  end
+  begin
+    source = File.read(file)
+    Sucheme::Evaluator.eval_source(source, env, filename: file)
+  rescue Sucheme::SuchemeError => e
+    $stderr.puts "Error in #{file}: #{e.message}"
+    exit 1
+  end
+end
+
+# Evaluate expressions specified with -e
+options[:eval_exprs].each do |expr|
+  begin
+    result = Sucheme::Evaluator.eval_source(expr, env)
+    unless result.is_a?(Sucheme::SchemeVoid)
+      puts result.to_s
+    end
+  rescue Sucheme::SuchemeError => e
+    $stderr.puts "Error: #{e.message}"
+    exit 1
+  end
+end
+
+# File argument
+if ARGV.length > 0
+  file = ARGV[0]
+  unless File.exist?(file)
+    $stderr.puts "sucheme: cannot open file: #{file}"
+    exit 1
+  end
+  begin
+    source = File.read(file)
+    # Set command line args
+    args_list = Sucheme::Evaluator.send(:array_to_list_helper, ARGV[1..]) rescue Sucheme::NULL
+    Sucheme::Evaluator.eval_source(source, env, filename: file)
+  rescue Sucheme::SuchemeError => e
+    $stderr.puts "Error: #{e.message}"
+    exit 1
+  end
+  exit 0 unless options[:interactive]
+end
+
+# REPL if no file or interactive mode
+if ARGV.empty? && options[:eval_exprs].empty? || options[:interactive]
+  repl = Sucheme::Repl.new(env: env, quiet: options[:quiet])
+  repl.run
+end

@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Ruby ${{ matrix.ruby-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        ruby-version: ['3.2', '3.3']
+        exclude:
+          # Only test Ruby 3.3 on Linux to save CI time
+          - os: windows-latest
+            ruby-version: '3.3'
+          - os: macos-latest
+            ruby-version: '3.3'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Run tests
+        run: bundle exec rspec spec/ --format progress
+
+      - name: Upload coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.ruby-version == '3.2'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+      - name: Run smoke test (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo '(+ 1 2)' | bundle exec ruby bin/sucheme
+          bundle exec ruby bin/sucheme --version
+
+      - name: Run smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          bundle exec ruby bin/sucheme --version
+          bundle exec ruby bin/sucheme -e "(+ 1 2)"
+          bundle exec ruby bin/sucheme -e "(display (+ 1 2 3))"
+
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Run benchmarks
+        run: bundle exec ruby benchmarks/benchmark.rb
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - name: Run RuboCop
+        run: bundle exec rubocop --parallel
+        continue-on-error: true
